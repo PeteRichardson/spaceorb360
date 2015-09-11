@@ -28,6 +28,10 @@ class Packet(object):
             result = UnknownPacket(bytes)
         return result
 
+    @classmethod
+    def dump_data(cls, bytes):
+        print " ".join([ch.encode("hex") for ch in bytes])
+
     def __str__(self):
         #line.append(c.encode('hex'))
         hexdata = [ch.encode("hex") for ch in self.data]
@@ -38,6 +42,30 @@ class ResetPacket(Packet):
 
 class BallDataPacket(Packet):
     desc = 'ball data'
+
+    @classmethod
+    def force(cls, bytes):
+        assert(len(bytes) > 8)
+        Packet.dump_data(bytes)
+        frcX = ((ord(bytes[1]) & 0x7F) << 3) | ((ord(bytes[2]) & 0x70) >> 4)
+        frcY = 13
+        frcZ = 132
+        return (frcX, frcY, frcZ)
+ 
+    @classmethod
+    def torque(cls, bytes):
+        assert(len(bytes) > 8)
+        trqX = 55
+        trqY = 178
+        trqZ = 6
+        return (trqX, trqY, trqZ)
+
+    def __str__(self):
+        #print len(self.data[2:])
+        button_str = ButtonDataPacket.button_state_str(self.data[0])
+        force_str = str(BallDataPacket.force(self.data[2:]))
+        torque_str = str(BallDataPacket.torque(self.data[2:]))
+        return "{:12}| {} | frc = {} | trq = {}".format(self.desc, button_str, force_str, torque_str )
 
 class ButtonDataPacket(Packet):
     desc = 'button data'
@@ -53,7 +81,6 @@ class ButtonDataPacket(Packet):
         result.append('E' if byte & 0x10 else '-')
         result.append('F' if byte & 0x20 else '-')
         return "".join(result)
-
 
     def __str__(self):
         button_byte = self.data[1]
